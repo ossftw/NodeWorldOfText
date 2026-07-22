@@ -891,6 +891,10 @@ async function initializeServer() {
 	await initialize_image_db();
 	await initialize_mutes_db();
 
+	// I don't like this variable name.
+	var geoLite2ASNPath = settings.paths && settings.paths.geolite2_asn;
+	await ipaddress.initASN(geoLite2ASNPath);
+
 	global_data.db = db;
 	global_data.db_img = db_img;
 	global_data.db_misc = db_misc;

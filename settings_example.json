@@ -53,7 +53,8 @@
 		"restr": "../nwotdata/restr.txt",
 		"restr_cg1": "../nwotdata/restr_cg1.txt",
 		"static_shortcuts": "../nwotdata/static_shortcuts.txt",
-		"uvias_css": ""
+		"uvias_css": "",
+		"geolite2_asn": "../nwotdata/GeoLite2-ASN.mmdb"
 	},
 
 	"email": {

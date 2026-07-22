@@ -3,6 +3,7 @@
 	"version": "1.0.0",
 	"description": "OurWorldOfText server",
 	"dependencies": {
+		"@maxmind/geoip2-node": "^7.1.0",
 		"adm-zip": "^0.5.16",
 		"nodemailer": "^7.0.10",
 		"pg": "^8.13.1",
