@@ -1,4 +1,29 @@
 var fs = require("fs");
+var Reader = require("@maxmind/geoip2-node").Reader;
+
+var asnReader = null;
+
+async function initASN(dbPath) {
+	if (!dbPath) return;
+	asnReader = Reader.open(dbPath);
+	// Todo: better error handling?
+}
+
+async function lookupASN(ip) {
+	if(!asnReader) return null;
+	if(!ip) return null;
+	try {
+		var result = asnReader.asn(ip);
+		if(result) {
+			return {
+				autonomousSystemNumber: result.autonomousSystemNumber,
+				autonomousSystemOrganization: result.autonomousSystemOrganization,
+				network: result.network
+			};
+		}
+	} catch(e) {}
+	return null;
+}
 
 function normalize_ipv6(ip) {
 	ip = ip.replace(/^:|:$/g, "");
@@ -267,4 +292,6 @@ module.exports = {
 	reconIPv4,
 	reconIPv6,
 	reconIP,
+	initASN,
+	lookupASN,
 };
