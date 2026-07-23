@@ -184,9 +184,12 @@ class RequestHandler {
 		this.ipAddress = evalIp[0];
 		this.ipAddressFam = evalIp[1];
 		this.ipAddressVal = evalIp[2];
+
+		var asnInfo = ipaddress.lookupASN(this.ipAddress);
+		this.ipAddressASN = asnInfo ? asnInfo.autonomousSystemNumber : null;
 	
 		var restr = restrictions.getRestrictions();
-		var deniedPages = this.server.checkHTTPRestr(restr, this.ipAddressVal, this.ipAddressFam);
+		var deniedPages = this.server.checkHTTPRestr(restr, this.ipAddressVal, this.ipAddressFam, this.ipAddressASN);
 		if(deniedPages.siteAccess) {
 			var deny_notes = "None";
 			if(deniedPages.siteAccessNote) {
@@ -695,14 +698,14 @@ class HTTPServer {
 		return token.toLowerCase() == this.createCSRF(userid, kclass);
 	}
 
-	checkHTTPRestr(restGroups, ipVal, ipFam) {
+	checkHTTPRestr(restGroups, ipVal, ipFam, asnNum) {
 		var resp = {
 			siteAccess: false,
 			siteAccessNote: null
 		};
 		if(!restGroups) return resp;
 
-		var r = restrictions.retrieveSiteRestrictionRule(restGroups, ipVal, ipFam);
+		var r = restrictions.retrieveSiteRestrictionRule(restGroups, ipVal, ipFam, asnNum);
 		if(r) {
 			resp.siteAccessNote = r.note;
 			resp.siteAccess = true;

@@ -77,14 +77,17 @@ module.exports = async function(data, server, params) {
 	var ipAddress;
 	var ipAddressVal;
 	var ipAddressFam;
+	var ipAddressASN;
 	if(params.ws && params.ws.sdata) {
 		ipAddress = params.ws.sdata.ipAddress;
 		ipAddressVal = params.ws.sdata.ipAddressVal;
 		ipAddressFam = params.ws.sdata.ipAddressFam;
+		ipAddressASN = params.ws.sdata.ipAddressASN;
 	} else {
 		ipAddress = params.ipAddress;
 		ipAddressVal = params.ipAddressVal;
 		ipAddressFam = params.ipAddressFam;
+		ipAddressASN = params.ipAddressASN;
 	}
 	
 	var tile_database = server.tile_database;
@@ -152,7 +155,7 @@ module.exports = async function(data, server, params) {
 		}
 	}
 
-	var httpWriteDenied = isHTTP && rate_limiter.checkHTTPWriteRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name);
+	var httpWriteDenied = isHTTP && rate_limiter.checkHTTPWriteRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name, ipAddressASN);
 
 	var totalEdits = 0;
 	var tiles = {};
@@ -181,7 +184,7 @@ module.exports = async function(data, server, params) {
 
 		var charRatePerSecond = defaultCharRatePerSecond;
 
-		var rrate = rate_limiter.checkCharrateRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name, tileX, tileY);
+		var rrate = rate_limiter.checkCharrateRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name, tileX, tileY, ipAddressASN);
 		if(rrate != null) {
 			charRatePerSecond = rrate;
 		}
@@ -222,7 +225,7 @@ module.exports = async function(data, server, params) {
 			tileCount++;
 		}
 
-		if(rate_limiter.checkColorRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name, tileX, tileY)) {
+		if(rate_limiter.checkColorRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name, tileX, tileY, ipAddressASN)) {
 			color = 0;
 			bgColor = -1;
 		}
