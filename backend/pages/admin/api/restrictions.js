@@ -19,6 +19,11 @@ module.exports.GET = async function(req, write, server, ctx, params) {
 				...item,
 				ip: reconIP(item.ip)
 			};
+		} else if(item.asn) {
+			return {
+				...item,
+				asn: "AS" + item.asn
+			};
 		} else {
 			return item;
 		}

@@ -9,7 +9,7 @@ async function initASN(dbPath) {
 	// Todo: better error handling?
 }
 
-async function lookupASN(ip) {
+function lookupASN(ip) {
 	if(!asnReader) return null;
 	if(!ip) return null;
 	try {

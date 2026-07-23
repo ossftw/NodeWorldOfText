@@ -2023,10 +2023,13 @@ async function manageWebsocketConnection(ws, req) {
 	ws.sdata.ipAddress = evalIp[0];
 	ws.sdata.ipAddressFam = evalIp[1];
 	ws.sdata.ipAddressVal = evalIp[2];
+
+	var asnInfo = ipaddress.lookupASN(ws.sdata.ipAddress);
+	ws.sdata.ipAddressASN = asnInfo ? asnInfo.autonomousSystemNumber : null;
 	
 	var restr = restrictions.getRestrictions();
 	
-	var deniedPages = httpServer.checkHTTPRestr(restr, ws.sdata.ipAddressVal, ws.sdata.ipAddressFam);
+	var deniedPages = httpServer.checkHTTPRestr(restr, ws.sdata.ipAddressVal, ws.sdata.ipAddressFam, ws.sdata.ipAddressASN);
 	if(deniedPages.siteAccess) {
 		var deny_notes = "None";
 		if(deniedPages.siteAccessNote) {

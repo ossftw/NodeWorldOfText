@@ -44,14 +44,17 @@ module.exports = async function(data, server, params) {
 	var ipAddress;
 	var ipAddressVal;
 	var ipAddressFam;
+	var ipAddressASN;
 	if(params.ws && params.ws.sdata) {
 		ipAddress = params.ws.sdata.ipAddress;
 		ipAddressVal = params.ws.sdata.ipAddressVal;
 		ipAddressFam = params.ws.sdata.ipAddressFam;
+		ipAddressASN = params.ws.sdata.ipAddressASN;
 	} else {
 		ipAddress = params.ipAddress;
 		ipAddressVal = params.ipAddressVal;
 		ipAddressFam = params.ipAddressFam;
+		ipAddressASN = params.ipAddressASN;
 	}
 
 
@@ -60,7 +63,7 @@ module.exports = async function(data, server, params) {
 
 	var idLabel = isGrouped ? "cg1" : ipAddress;
 	var linkLimiter = rate_limiter.prepareRateLimiter(rate_limiter.linkRateLimits, 1000, idLabel);
-	var lrate = rate_limiter.checkLinkrateRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name);
+	var lrate = rate_limiter.checkLinkrateRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name, ipAddressASN);
 
 	var no_log_edits = world.opts.noLogEdits;
 
