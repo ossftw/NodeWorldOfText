@@ -217,7 +217,7 @@ function buildRestrictionsTree(currentList) {
 
 function divideGroupIntoRestrictionsTree(group) {
 	for(let ipMode in group) {
-		if(ipMode == "cg1") continue;
+		if(ipMode == "cg1" || ipMode == "asn") continue;
 		for(let world in group[ipMode]) {
 			let worldObj = group[ipMode][world];
 			worldObj.list = buildRestrictionsTree(worldObj.list);
@@ -226,14 +226,23 @@ function divideGroupIntoRestrictionsTree(group) {
 	}
 }
 
+function parseASN(str) {
+	if(!str) return null;
+	str = str.trim().toUpperCase();
+	if(str.startsWith("AS")) str = str.slice(2);
+	let num = parseInt(str);
+	if(isNaN(num) || num <= 0) return null;
+	return num;
+}
+
 function parseRestrictionsList(list) {
 	let parsed = {
-		charrate: { ipv4: [], ipv6: [], cg1: [] },
-		linkrate: { ipv4: [], ipv6: [], cg1: [] },
-		color: { ipv4: [], ipv6: [], cg1: [] },
+		charrate: { ipv4: [], ipv6: [], cg1: [], asn: [] },
+		linkrate: { ipv4: [], ipv6: [], cg1: [], asn: [] },
+		color: { ipv4: [], ipv6: [], cg1: [], asn: [] },
 		daccess: {
-			site: { ipv4: [], ipv6: [] },
-			httpwrite: { ipv4: [], ipv6: [], cg1: [] }
+			site: { ipv4: [], ipv6: [], asn: [] },
+			httpwrite: { ipv4: [], ipv6: [], cg1: [], asn: [] }
 		},
 		rawList: []
 	};
@@ -243,6 +252,7 @@ function parseRestrictionsList(list) {
 		let itemtype = "";
 		let itemip = "";
 		let itemgroup = "";
+		let itemasn = "";
 		let itemtag = "";
 		let props = {};
 		for(let x = 0; x < item.length; x++) {
@@ -255,14 +265,17 @@ function parseRestrictionsList(list) {
 				itemtype = val;
 			} else if(key == "group") {
 				itemgroup = val;
+			} else if(key == "asn") {
+				itemasn = val;
 			} else if(key == "tag") {
 				itemtag = val;
 			} else {
 				props[key] = val;
 			}
 		}
-		if((!itemip && !itemgroup) || !["charrate", "color", "linkrate", "daccess"].includes(itemtype)) continue;
-		if(itemgroup && itemip) continue; // can't have both
+		if((!itemip && !itemgroup && !itemasn) || !["charrate", "color", "linkrate", "daccess"].includes(itemtype)) continue;
+		let idCount = (itemip ? 1 : 0) + (itemgroup ? 1 : 0) + (itemasn ? 1 : 0);
+		if(idCount > 1) continue; // can't have multiple identifiers
 		
 		let obj = null;
 		if(itemtype == "charrate") {
@@ -339,6 +352,10 @@ function parseRestrictionsList(list) {
 				obj.ip = ipInfo;
 			} else if(itemgroup) {
 				obj.group = itemgroup;
+			} else if(itemasn) {
+				let asnNum = parseASN(itemasn);
+				if(!asnNum) continue;
+				obj.asn = asnNum;
 			}
 			obj.index = i;
 			parsed.rawList.push(obj);
@@ -354,6 +371,8 @@ function parseRestrictionsList(list) {
 						}
 					} else if(itemgroup) {
 						parsed.charrate.cg1.push(obj);
+					} else if(itemasn) {
+						parsed.charrate.asn.push(obj);
 					}
 					break;
 				case "linkrate":
@@ -365,6 +384,8 @@ function parseRestrictionsList(list) {
 						}
 					} else if(itemgroup) {
 						parsed.linkrate.cg1.push(obj);
+					} else if(itemasn) {
+						parsed.linkrate.asn.push(obj);
 					}
 					break;
 				case "color":
@@ -376,6 +397,8 @@ function parseRestrictionsList(list) {
 						}
 					} else if(itemgroup) {
 						parsed.color.cg1.push(obj);
+					} else if(itemasn) {
+						parsed.color.asn.push(obj);
 					}
 					break;
 				case "daccess":
@@ -386,6 +409,8 @@ function parseRestrictionsList(list) {
 							} else if(obj.ip[1] == 6) {
 								parsed.daccess.site.ipv6.push(obj);
 							}
+						} else if(itemasn) {
+							parsed.daccess.site.asn.push(obj);
 						}
 					} else if(obj.mode == "httpwrite") {
 						if(itemip) {
@@ -396,6 +421,8 @@ function parseRestrictionsList(list) {
 							}
 						} else if(itemgroup) {
 							parsed.daccess.httpwrite.cg1.push(obj);
+						} else if(itemasn) {
+							parsed.daccess.httpwrite.asn.push(obj);
 						}
 					}
 			}
@@ -408,12 +435,12 @@ function parseRestrictionsList(list) {
 function procRest(list) {
 	let parsed = parseRestrictionsList(list);
 	let worldGroups = {
-		charrate: { ipv4: {}, ipv6: {}, cg1: {} },
-		linkrate: { ipv4: {}, ipv6: {}, cg1: {} },
-		color: { ipv4: {}, ipv6: {}, cg1: {} },
+		charrate: { ipv4: {}, ipv6: {}, cg1: {}, asn: {} },
+		linkrate: { ipv4: {}, ipv6: {}, cg1: {}, asn: {} },
+		color: { ipv4: {}, ipv6: {}, cg1: {}, asn: {} },
 		daccess: {
-			site: { ipv4: [], ipv6: [] },
-			httpwrite: { ipv4: {}, ipv6: {}, cg1: {} }
+			site: { ipv4: [], ipv6: [], asn: [] },
+			httpwrite: { ipv4: {}, ipv6: {}, cg1: {}, asn: {} }
 		}
 	};
 	
@@ -455,6 +482,12 @@ function procRest(list) {
 	divideGroupIntoRestrictionsTree(worldGroups.linkrate);
 	divideGroupIntoRestrictionsTree(worldGroups.color);
 	divideGroupIntoRestrictionsTree(worldGroups.daccess.httpwrite);
+	
+	divideRestrictionsIntoWorlds(parsed.charrate.asn, worldGroups.charrate.asn);
+	divideRestrictionsIntoWorlds(parsed.linkrate.asn, worldGroups.linkrate.asn);
+	divideRestrictionsIntoWorlds(parsed.color.asn, worldGroups.color.asn);
+	divideRestrictionsIntoWorlds(parsed.daccess.site.asn, worldGroups.daccess.site.asn);
+	divideRestrictionsIntoWorlds(parsed.daccess.httpwrite.asn, worldGroups.daccess.httpwrite.asn);
 	
 	worldGroups.daccess.site.ipv4 = buildRestrictionsTree(parsed.daccess.site.ipv4);
 	worldGroups.daccess.site.ipv6 = buildRestrictionsTree(parsed.daccess.site.ipv6);
@@ -522,6 +555,8 @@ function rebuildRestrictionsList(restrictions) {
 			identifier = "ip=" + ip;
 		} else if(group) {
 			identifier = "group=" + group;
+		} else if(restr.asn) {
+			identifier = "asn=AS" + restr.asn;
 		}
 
 		if(type == "charrate") {
@@ -677,7 +712,35 @@ function getMinRule(a, b) {
 	}
 }
 
-function retrieveRestrictionRule(restGroup, ipVal, ipFam, isGrouped, world, tileX, tileY) {
+function retrieveASNRule(asnList, asnNum, world) {
+	if(!asnList || !asnNum) return null;
+	world = world.toLowerCase();
+	let globalList = asnList["."]?.list;
+	let worldList = asnList[world]?.list;
+	let bestRule = null;
+	let bestIndex = Infinity;
+	if(globalList) {
+		for(let i = 0; i < globalList.length; i++) {
+			let rule = globalList[i];
+			if(rule.asn === asnNum && rule.index < bestIndex) {
+				bestRule = rule;
+				bestIndex = rule.index;
+			}
+		}
+	}
+	if(worldList) {
+		for(let i = 0; i < worldList.length; i++) {
+			let rule = worldList[i];
+			if(rule.asn === asnNum && rule.index < bestIndex) {
+				bestRule = rule;
+				bestIndex = rule.index;
+			}
+		}
+	}
+	return bestRule;
+}
+
+function retrieveRestrictionRule(restGroup, ipVal, ipFam, isGrouped, world, tileX, tileY, asnNum) {
 	if(!restGroup) return null;
 	world = world.toLowerCase();
 	let ipMode = ipFam == 4 ? "ipv4" : "ipv6";
@@ -715,16 +778,31 @@ function retrieveRestrictionRule(restGroup, ipVal, ipFam, isGrouped, world, tile
 			return minRule;
 		}
 	}
+	let asnRule = retrieveASNRule(restGroup.asn, asnNum, world);
+	if(asnRule) {
+		return asnRule;
+	}
 	return null;
 }
 
-function retrieveSiteRestrictionRule(restGroups, ipVal, ipFam) {
+function retrieveSiteRestrictionRule(restGroups, ipVal, ipFam, asnNum) {
 	let ipMode = ipFam == 4 ? "ipv4" : "ipv6";
 	let ipList = restGroups?.daccess?.site?.[ipMode];
 	if(!ipList) return null;
 	let lookup = lookupRule(ipList, ipVal, ipFam);
 	if(lookup) {
 		return lookup.rule;
+	}
+	if(asnNum) {
+		let asnList = restGroups?.daccess?.site?.asn;
+		if(asnList) {
+			let globalList = asnList["."]?.list;
+			if(globalList) {
+				for(let i = 0; i < globalList.length; i++) {
+					if(globalList[i].asn === asnNum) return globalList[i];
+				}
+			}
+		}
 	}
 	return null;
 }
@@ -743,5 +821,7 @@ module.exports = {
 	rebuildRestrictionsList,
 	rebuildCoalitionList,
 	retrieveRestrictionRule,
-	retrieveSiteRestrictionRule
+	retrieveSiteRestrictionRule,
+	retrieveASNRule,
+	parseASN
 };
