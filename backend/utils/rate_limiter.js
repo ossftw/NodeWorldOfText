@@ -61,29 +61,29 @@ function prepareRateLimiter(limObj, periodLength, ipAddress) {
 	return obj;
 }
 
-function checkCharrateRestr(restGroups, ipVal, ipFam, isGrouped, world, tileX, tileY) {
-	let r = retrieveRestrictionRule(restGroups.charrate, ipVal, ipFam, isGrouped, world, tileX, tileY);
+function checkCharrateRestr(restGroups, ipVal, ipFam, isGrouped, world, tileX, tileY, asnNum) {
+	let r = retrieveRestrictionRule(restGroups.charrate, ipVal, ipFam, isGrouped, world, tileX, tileY, asnNum);
 	if(r) {
 		return r.rate;
 	}
 	return null;
 }
 
-function checkLinkrateRestr(restGroups, ipVal, ipFam, isGrouped, world) {
-	let r = retrieveRestrictionRule(restGroups.linkrate, ipVal, ipFam, isGrouped, world, null, null);
+function checkLinkrateRestr(restGroups, ipVal, ipFam, isGrouped, world, asnNum) {
+	let r = retrieveRestrictionRule(restGroups.linkrate, ipVal, ipFam, isGrouped, world, null, null, asnNum);
 	if(r) {
 		return r.rate;
 	}
 	return null;
 }
 
-function checkColorRestr(restGroups, ipVal, ipFam, isGrouped, world, tileX, tileY) {
-	let r = retrieveRestrictionRule(restGroups.color, ipVal, ipFam, isGrouped, world, tileX, tileY);
+function checkColorRestr(restGroups, ipVal, ipFam, isGrouped, world, tileX, tileY, asnNum) {
+	let r = retrieveRestrictionRule(restGroups.color, ipVal, ipFam, isGrouped, world, tileX, tileY, asnNum);
 	return r != null;
 }
 
-function checkHTTPWriteRestr(restGroups, ipVal, ipFam, isGrouped, world) {
-	let r = retrieveRestrictionRule(restGroups.daccess.httpwrite, ipVal, ipFam, isGrouped, world, null, null);
+function checkHTTPWriteRestr(restGroups, ipVal, ipFam, isGrouped, world, asnNum) {
+	let r = retrieveRestrictionRule(restGroups.daccess.httpwrite, ipVal, ipFam, isGrouped, world, null, null, asnNum);
 	return r != null;
 }
 
