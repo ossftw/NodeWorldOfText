@@ -1477,7 +1477,7 @@ function loadRestrictionsList() {
 			restrictions.setRestrictionsFlatListStr(result.rawStr);
 		}
 		for(var cgNum in restr_cgx_cache) {
-			if(restr_cgx_cache[cgNun]) {
+			if(restr_cgx_cache[cgNum]) {
 				var list = restr_cgx_cache[cgNum].toString("utf8").replace(/\r\n/g, "\n").split("\n");
 				var result = restrictions.procCoal(list);
 				restrictions.setCoalition(cgNum, result.data);
