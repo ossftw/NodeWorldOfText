@@ -52,7 +52,7 @@ module.exports = async function(data, server, params) {
 
 	var isGrouped = checkCoalition(ipAddressVal, ipAddressFam);
 
-	var idLabel = isGrouped ? "cg1" : ipAddress;
+	var idLabel = isGrouped ? isGrouped : ipAddress;
 
 	broadcastMonitorEvent("Protect", ipAddress + " set 'protect' on world '" + world.name + "' (" + world.id + "), coords (" + tileX + ", " + tileY + ")");
 

@@ -58,7 +58,7 @@ module.exports = async function(data, server, params) {
 	var restr = getRestrictions();
 	var isGrouped = checkCoalition(ipAddressVal, ipAddressFam);
 
-	var idLabel = isGrouped ? "cg1" : ipAddress;
+	var idLabel = isGrouped ? isGrouped : ipAddress;
 	var linkLimiter = rate_limiter.prepareRateLimiter(rate_limiter.linkRateLimits, 1000, idLabel);
 	var lrate = rate_limiter.checkLinkrateRestr(restr, ipAddressVal, ipAddressFam, isGrouped, world.name);
 

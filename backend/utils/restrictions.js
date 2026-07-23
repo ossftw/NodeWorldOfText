@@ -26,15 +26,25 @@ function setRestrictionsFlatListStr(array) {
 function getRestrictionsFlatListStr() {
 	return restrictionsFlatListStr;
 }
-function setCoalition(name, data) {
+function setCoalition(num, data) {
 	if(data === null) {
-		delete coalition[name];
+		delete coalition[num];
 	} else {
-		coalition[name] = data;
+		coalition[num] = data;
 	}
 }
-function checkCoalition(name, val, fam) {
-	var group = coalition[name];
+function checkCoalition(num, val, fam) {
+	if(fam === undefined) {
+		// 2 arg form of checkCoalition() (val, fam) returns cgNum or false
+		fam = val;
+		val = num;
+		for(var cgNum in coalition) {
+			if(checkCoalition(cgNum, val, fam)) return cgNum;
+		}
+		return false;
+	}
+	// 3 arg form (num, val, fam) returns a boolean
+	var group = coalition[num];
 	if(!group) return false;
 	var list = null;
 	if(fam == 4) {
@@ -455,16 +465,16 @@ function procRest(list) {
 	divideRestrictionsIntoWorlds(parsed.daccess.httpwrite.ipv6, worldGroups.daccess.httpwrite.ipv6);
 
 	for(let type in { charrate: 1, linkrate: 1, color: 1 }) {
-		for(let cgName in parsed[type]) {
-			if(cgName == "ipv4" || cgName == "ipv6") continue;
-			if(!worldGroups[type][cgName]) worldGroups[type][cgName] = {};
-			divideRestrictionsIntoWorlds(parsed[type][cgName], worldGroups[type][cgName]);
+		for(let cgNum in parsed[type]) {
+			if(cgNum == "ipv4" || cgNum == "ipv6") continue;
+			if(!worldGroups[type][cgNum]) worldGroups[type][cgNum] = {};
+			divideRestrictionsIntoWorlds(parsed[type][cgNum], worldGroups[type][cgNum]);
 		}
 	}
-	for(let cgName in parsed.daccess.httpwrite) {
-		if(cgName == "ipv4" || cgName == "ipv6") continue;
-		if(!worldGroups.daccess.httpwrite[cgName]) worldGroups.daccess.httpwrite[cgName] = {};
-		divideRestrictionsIntoWorlds(parsed.daccess.httpwrite[cgName], worldGroups.daccess.httpwrite[cgName]);
+	for(let cgNum in parsed.daccess.httpwrite) {
+		if(cgNum == "ipv4" || cgNum == "ipv6") continue;
+		if(!worldGroups.daccess.httpwrite[cgNum]) worldGroups.daccess.httpwrite[cgNum] = {};
+		divideRestrictionsIntoWorlds(parsed.daccess.httpwrite[cgNum], worldGroups.daccess.httpwrite[cgNum]);
 	}
 	
 	divideGroupIntoRestrictionsTree(worldGroups.charrate);
@@ -693,16 +703,16 @@ function getMinRule(a, b) {
 	}
 }
 
-function retrieveRestrictionRule(restGroup, ipVal, ipFam, cgName, world, tileX, tileY) {
+function retrieveRestrictionRule(restGroup, ipVal, ipFam, cgNum, world, tileX, tileY) {
 	if(!restGroup) return null;
 	world = world.toLowerCase();
 	let ipMode = ipFam == 4 ? "ipv4" : "ipv6";
 	let globalLookup = lookupRule(restGroup[ipMode]?.["."]?.list, ipVal);
 	let worldLookup = lookupRule(restGroup[ipMode]?.[world]?.list, ipVal);
 	let currentRule = getMinRule(globalLookup, worldLookup);
-	if(cgName) {
-		let globalGroup = restGroup[cgName]?.["."]?.list?.[0];
-		let worldGroup = restGroup[cgName]?.[world]?.list?.[0];
+	if(cgNum) {
+		let globalGroup = restGroup[cgNum]?.["."]?.list?.[0];
+		let worldGroup = restGroup[cgNum]?.[world]?.list?.[0];
 		let groupRule = getMinRule(globalGroup, worldGroup);
 		currentRule = getMinRule(currentRule, groupRule);
 	}

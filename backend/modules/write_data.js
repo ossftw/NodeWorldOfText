@@ -135,7 +135,7 @@ module.exports = async function(data, server, params) {
 
 	var rejected = {};
 
-	var idLabel = isGrouped ? "cg1" : ipAddress;
+	var idLabel = isGrouped ? isGrouped : ipAddress;
 	
 	var tileLimiter = rate_limiter.prepareRateLimiter(rate_limiter.tileRateLimits, 1000, idLabel);
 	var editLimiter = rate_limiter.prepareRateLimiter(rate_limiter.editRateLimits, 1000, idLabel);

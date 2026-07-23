@@ -1463,9 +1463,9 @@ function loadRestrictionsList() {
 	try {
 		restr_cache = fs.readFileSync(restrPath).toString("utf8");
 	} catch(e) {};
-	for(var cgName in restrCgxPaths) {
+	for(var cgNum in restrCgxPaths) {
 		try {
-			restr_cgx_cache[cgName] = fs.readFileSync(restrCgxPaths[cgName]).toString("utf8");
+			restr_cgx_cache[cgNum] = fs.readFileSync(restrCgxPaths[cgNum]).toString("utf8");
 		} catch(e) {};
 	}
 	try {
@@ -1476,11 +1476,11 @@ function loadRestrictionsList() {
 			restrictions.setRestrictionsFlatList(result.raw);
 			restrictions.setRestrictionsFlatListStr(result.rawStr);
 		}
-		for(var cgName in restr_cgx_cache) {
-			if(restr_cgx_cache[cgName]) {
-				var list = restr_cgx_cache[cgName].toString("utf8").replace(/\r\n/g, "\n").split("\n");
+		for(var cgNum in restr_cgx_cache) {
+			if(restr_cgx_cache[cgNun]) {
+				var list = restr_cgx_cache[cgNum].toString("utf8").replace(/\r\n/g, "\n").split("\n");
 				var result = restrictions.procCoal(list);
-				restrictions.setCoalition(cgName, result.data);
+				restrictions.setCoalition(cgNum, result.data);
 			}
 		}
 	} catch(e) {
@@ -1507,10 +1507,10 @@ async function commitRestrictionsToDisk() {
 		await fs.promises.writeFile(restrPath, restr_update);
 		restr_update = null;
 	}
-	for(var cgName in restr_cgx_update) {
-		if(restr_cgx_update[cgName] != null) {
-			await fs.promises.writeFile(restrCgxPaths[cgName], restr_cgx_update[cgName]);
-			restr_cgx_update[cgName] = null;
+	for(var cgNum in restr_cgx_update) {
+		if(restr_cgx_update[cgNum] != null) {
+			await fs.promises.writeFile(restrCgxPaths[cgNum], restr_cgx_update[cgNum]);
+			restr_cgx_update[cgNum] = null;
 		}
 	}
 }
