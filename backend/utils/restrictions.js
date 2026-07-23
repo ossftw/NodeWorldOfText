@@ -7,10 +7,7 @@ var reconIPv6 = ipaddress.reconIPv6;
 var restrictionsTree = {};
 var restrictionsFlatList = [];
 var restrictionsFlatListStr = [];
-var coalition = {
-	v4: [],
-	v6: []
-};
+var coalition = {};
 function setRestrictions(obj) {
 	restrictionsTree = obj;
 }
@@ -29,15 +26,21 @@ function setRestrictionsFlatListStr(array) {
 function getRestrictionsFlatListStr() {
 	return restrictionsFlatListStr;
 }
-function setCoalition(list) {
-	coalition = list;
+function setCoalition(name, data) {
+	if(data === null) {
+		delete coalition[name];
+	} else {
+		coalition[name] = data;
+	}
 }
-function checkCoalition(val, fam) {
+function checkCoalition(name, val, fam) {
+	var group = coalition[name];
+	if(!group) return false;
 	var list = null;
 	if(fam == 4) {
-		list = coalition.v4;
+		list = group.v4;
 	} else if(fam == 6) {
-		list = coalition.v6;
+		list = group.v6;
 	} else {
 		return false;
 	}

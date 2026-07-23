@@ -101,7 +101,14 @@ var imageDBPath    = settings.paths.images;
 var miscDBPath     = settings.paths.misc;
 var staticNumsPath = settings.paths.static_shortcuts;
 var restrPath      = settings.paths.restr;
-var restrCg1Path   = settings.paths.restr_cg1;
+
+//var restrCg1Path   = settings.paths.restr_cg1;
+var restrCgxPaths = {};
+for(var key in settings.paths) {
+	if(/^restr_cg\d+$/.test(key)) {
+		restrCgxPaths[key] = settings.paths[key];
+	}
+}
 var accountSystem  = settings.account_system; // "uvias" or "local"
 
 var loginPath = "/accounts/login/";
@@ -172,9 +179,9 @@ var memTileCache = {};
 var clientVersion = "";
 var ranks_cache = { users: {} };
 var restr_cache = "";
-var restr_cg1_cache = "";
+var restr_cgx_cache = {};
 var restr_update = null;
-var restr_cg1_update = null;
+var restr_cgx_update = {};
 var worldData = {};
 var client_cursor_pos = {};
 var client_ips = {};
@@ -1447,12 +1454,8 @@ function setupMonitorServer() {
 }
 
 function loadString(type) {
-	switch(type) {
-		case "restr":
-			return restr_cache;
-		case "restr_cg1":
-			return restr_cg1_cache;
-	}
+	if(type == "restr") return restr_cache;
+	if(/^restr_cg\d+$/.test(type)) return restr_cgx_cache[type] ?? null;
 	return null;
 }
 
@@ -1460,9 +1463,11 @@ function loadRestrictionsList() {
 	try {
 		restr_cache = fs.readFileSync(restrPath).toString("utf8");
 	} catch(e) {};
-	try {
-		restr_cg1_cache = fs.readFileSync(restrCg1Path).toString("utf8");
-	} catch(e) {};
+	for(var cgName in restrCgxPaths) {
+		try {
+			restr_cgx_cache[cgName] = fs.readFileSync(restrCgxPaths[cgName]).toString("utf8");
+		} catch(e) {};
+	}
 	try {
 		if(restr_cache) {
 			var list = restr_cache.toString("utf8").replace(/\r\n/g, "\n").split("\n");
@@ -1471,10 +1476,12 @@ function loadRestrictionsList() {
 			restrictions.setRestrictionsFlatList(result.raw);
 			restrictions.setRestrictionsFlatListStr(result.rawStr);
 		}
-		if(restr_cg1_cache) {
-			var list = restr_cg1_cache.toString("utf8").replace(/\r\n/g, "\n").split("\n");
-			var result = restrictions.procCoal(list);
-			restrictions.setCoalition(result.data);
+		for(var cgName in restr_cgx_cache) {
+			if(restr_cgx_cache[cgName]) {
+				var list = restr_cgx_cache[cgName].toString("utf8").replace(/\r\n/g, "\n").split("\n");
+				var result = restrictions.procCoal(list);
+				restrictions.setCoalition(cgName, result.data);
+			}
 		}
 	} catch(e) {
 		handle_error(e);
@@ -1487,11 +1494,11 @@ function saveRestrictions(type, data) {
 			restr_update = data;
 		}
 		restr_cache = data;
-	} else if(type == "cg1") {
-		if(restr_cg1_cache != data) {
-			restr_cg1_update = data;
+	} else if(/^cg\d+$/.test(type)) {
+		if(restr_cgx_cache[type] != data) {
+			restr_cgx_update[type] = data;
 		}
-		restr_cg1_cache = data;
+		restr_cgx_cache[type] = data;
 	}
 }
 
@@ -1500,9 +1507,11 @@ async function commitRestrictionsToDisk() {
 		await fs.promises.writeFile(restrPath, restr_update);
 		restr_update = null;
 	}
-	if(restr_cg1_update != null) {
-		await fs.promises.writeFile(restrCg1Path, restr_cg1_update);
-		restr_cg1_update = null;
+	for(var cgName in restr_cgx_update) {
+		if(restr_cgx_update[cgName] != null) {
+			await fs.promises.writeFile(restrCgxPaths[cgName], restr_cgx_update[cgName]);
+			restr_cgx_update[cgName] = null;
+		}
 	}
 }
 
