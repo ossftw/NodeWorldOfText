@@ -246,6 +246,8 @@ var dragPosY = 0;
 var isDragging = false;
 var hasDragged = false;
 var draggingEnabled = true;
+var prevDragPositionX = 0;
+var prevDragPositionY = 0;
 var touchInitZoom = 0;
 var touchInitDistance = 0;
 var touchPrev = null;
@@ -357,6 +359,205 @@ function updateCoordDisplay() {
 	     elm.tile_Y.innerText,
 		 elm.char_X.innerText,
 		 elm.char_Y.innerText] = [...cursorCoords];
+	}
+}
+
+// Ported from YWOT
+
+var scrollAnimating = false;
+var scrollTargetX = 0;
+var scrollTargetY = 0;
+var lastFrameTime = 0;
+
+var momentum = {
+	enabled: false,
+	startTime: 0,
+	velocity: { x: 0, y: 0 },
+	velocityCheckInterval: 35,
+	delta: { x: 0, y: 0 },
+	lastPos: { x: 0, y: 0 },
+	lastUpdate: 0,
+	moveTimeout: 0,
+	start: function() {
+		this.stop(true);
+		this.startTime = performance.now();
+		var self = this;
+		this.moveTimeout = setTimeout(function() { self.move(); }, 10);
+	},
+	stop: function(keepVelocity) {
+		clearTimeout(this.moveTimeout);
+		this.lastUpdate = performance.now();
+		this.delta.x = 0;
+		this.delta.y = 0;
+		if(!keepVelocity) {
+			this.velocity.x = 0;
+			this.velocity.y = 0;
+		}
+		this.lastPos.x = 0;
+		this.lastPos.y = 0;
+	},
+	enable: function() {
+		this.enabled = true;
+	},
+	disable: function() {
+		this.enabled = false;
+	},
+	isEnabled: function() {
+		return this.enabled;
+	},
+	velocityHasRecentlyUpdated: function() {
+		return performance.now() - this.lastUpdate < 100;
+	},
+	move: function() {
+		if(!this.enabled) return;
+		var elapsed = performance.now() - this.startTime;
+		elapsed = Math.floor(elapsed / 4);
+		var vx = this.velocity.x / 9;
+		var vy = this.velocity.y / 9;
+		vx = this.calcPosition(vx, 1.03, elapsed);
+		vy = this.calcPosition(vy, 1.03, elapsed);
+		var dx = vx - this.lastPos.x;
+		var dy = vy - this.lastPos.y;
+		if(Math.trunc(dx) == 0) dx = 0;
+		if(Math.trunc(dy) == 0) dy = 0;
+		if(dx == 0 && dy == 0) return;
+		scrollBy(Math.trunc(dx), Math.trunc(dy));
+		this.lastPos.x = vx;
+		this.lastPos.y = vy;
+		var self = this;
+		this.moveTimeout = setTimeout(function() { self.move(); }, 10);
+	},
+	calcPosition: function(v, base, t) {
+		return v * (base - Math.pow(base, -t - 1)) / (base - 1);
+	},
+	updateVelocity: function(dx, dy, stop) {
+		if(!this.enabled) return;
+		var now = performance.now();
+		var elapsed = now - this.lastUpdate;
+		if(stop && elapsed > 100) {
+			this.stop();
+			return;
+		}
+		this.delta.x += dx;
+		this.delta.y += dy;
+		if(elapsed > this.velocityCheckInterval) {
+			var maxSpeed = 100 * devicePixelRatio;
+			var dist = Math.sqrt(this.delta.x * this.delta.x + this.delta.y * this.delta.y);
+			var scale = dist > maxSpeed ? maxSpeed / dist : 1;
+			this.velocity.x = scale * this.delta.x;
+			this.velocity.y = scale * this.delta.y;
+			this.lastUpdate = now;
+			this.delta.x = 0;
+			this.delta.y = 0;
+		}
+	}
+};
+
+function scrollBy(dx, dy) {
+	positionX += dx;
+	positionY += dy;
+	updateCoordDisplay();
+	w.render();
+}
+
+function scrollAnimateTo(targetX, targetY) {
+	scrollTargetX = targetX;
+	scrollTargetY = targetY;
+	scrollAnimating = true;
+}
+
+function scrollAnimateStop() {
+	scrollAnimating = false;
+}
+
+function scrollAnimateMove(dt) {
+	if(!scrollAnimating) return;
+	var speed = 800 / dt;
+	var dx = scrollTargetX - positionX;
+	var dy = scrollTargetY - positionY;
+	var dist = Math.sqrt(dx * dx + dy * dy);
+	var moveX = Math.round(dx * speed / dist);
+	var moveY = Math.round(dy * speed / dist);
+	if(dist < 20) {
+		scrollAnimateStop();
+		return;
+	}
+	scrollBy(moveX, moveY);
+}
+
+function makeLeftRoom() {
+	tileFetchOffsetX -= 1;
+	positionX += tileW;
+	var keys = Object.keys(tiles);
+	for(var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var t = tiles[key];
+		if(t) {
+			var pos = key.split(",");
+			var tileY = parseInt(pos[0]);
+			var tileX = parseInt(pos[1]);
+			var newTileX = tileX - 1;
+			delete tiles[key];
+			var newKey = tileY + "," + newTileX;
+			tiles[newKey] = t;
+		}
+	}
+}
+
+function makeTopRoom() {
+	tileFetchOffsetY -= 1;
+	positionY += tileH;
+	var keys = Object.keys(tiles);
+	for(var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var t = tiles[key];
+		if(t) {
+			var pos = key.split(",");
+			var tileY = parseInt(pos[0]);
+			var tileX = parseInt(pos[1]);
+			var newTileY = tileY - 1;
+			delete tiles[key];
+			var newKey = newTileY + "," + tileX;
+			tiles[newKey] = t;
+		}
+	}
+}
+
+function makeRightRoom() {
+	tileFetchOffsetX += 1;
+	positionX -= tileW;
+	var keys = Object.keys(tiles);
+	for(var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var t = tiles[key];
+		if(t) {
+			var pos = key.split(",");
+			var tileY = parseInt(pos[0]);
+			var tileX = parseInt(pos[1]);
+			var newTileX = tileX + 1;
+			delete tiles[key];
+			var newKey = tileY + "," + newTileX;
+			tiles[newKey] = t;
+		}
+	}
+}
+
+function makeBottomRoom() {
+	tileFetchOffsetY += 1;
+	positionY -= tileH;
+	var keys = Object.keys(tiles);
+	for(var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var t = tiles[key];
+		if(t) {
+			var pos = key.split(",");
+			var tileY = parseInt(pos[0]);
+			var tileX = parseInt(pos[1]);
+			var newTileY = tileY + 1;
+			delete tiles[key];
+			var newKey = newTileY + "," + tileX;
+			tiles[newKey] = t;
+		}
 	}
 }
 
@@ -2257,11 +2458,16 @@ function event_mousedown(e, arg_pageX, arg_pageY) {
 	var coords = getTileCoordsFromMouseCoords(pageX, pageY);
 	currentPosition = coords;
 
+	scrollAnimateStop();
+	momentum.stop();
+
 	if(draggingEnabled) {
 		dragStartX = pageX;
 		dragStartY = pageY;
 		dragPosX = positionX;
 		dragPosY = positionY;
+		prevDragPositionX = positionX;
+		prevDragPositionY = positionY;
 		isDragging = true;
 	}
 	var isActive = triggerUIClick();
@@ -2387,6 +2593,9 @@ function stopDragging() {
 	isDragging = false;
 	hasDragged = false;
 	elm.owot.style.cursor = defaultCursor;
+	if(momentum.isEnabled() && momentum.velocityHasRecentlyUpdated()) {
+		momentum.start();
+	}
 }
 
 function event_mouseup(e, arg_pageX, arg_pageY) {
@@ -4173,6 +4382,11 @@ function event_mousemove(e, arg_pageX, arg_pageY) {
 
 	positionX = dragPosX + (pageX - dragStartX);
 	positionY = dragPosY + (pageY - dragStartY);
+	var velDX = positionX - prevDragPositionX;
+	var velDY = positionY - prevDragPositionY;
+	prevDragPositionX = positionX;
+	prevDragPositionY = positionY;
+	momentum.updateVelocity(velDX, velDY);
 	hasDragged = true;
 	w.render();
 }
@@ -4205,6 +4419,9 @@ function event_touchstart(e) {
 	if(target != elm.owot && target != linkDiv) {
 		return;
 	}
+
+	scrollAnimateStop();
+	momentum.stop();
 
 	// if this is the beginning of a potential longpress, mark the start time
 	if(touches.length == 1) {
@@ -4239,6 +4456,8 @@ function event_touchstart(e) {
 		dragStartY = y;
 		dragPosX = positionX;
 		dragPosY = positionY;
+		prevDragPositionX = positionX;
+		prevDragPositionY = positionY;
 		isDragging = true;
 	}
 }
@@ -4307,6 +4526,11 @@ function event_touchmove(e) {
 	}
 	positionX = Math.round(positionX);
 	positionY = Math.round(positionY);
+	var velDX = positionX - prevDragPositionX;
+	var velDY = positionY - prevDragPositionY;
+	prevDragPositionX = positionX;
+	prevDragPositionY = positionY;
+	momentum.updateVelocity(velDX, velDY);
 	hasDragged = true;
 	
 	e.preventDefault();
@@ -4338,13 +4562,11 @@ function event_wheel(e) {
 		deltaX = deltaY;
 		deltaY = 0;
 	}
-	positionY -= deltaY;
-	positionX -= deltaX;
+	scrollBy(-deltaX, -deltaY);
 	w.emit("scroll", {
 		deltaX: -deltaX,
 		deltaY: -deltaY
 	});
-	w.render();
 	e.preventDefault();
 }
 
@@ -5195,6 +5417,12 @@ function clearAllGuestCursors() {
 }
 
 function renderLoop() {
+	var now = performance.now();
+	var dt = now - lastFrameTime;
+	lastFrameTime = now;
+	if(dt > 0 && dt < 1000) {
+		scrollAnimateMove(dt);
+	}
 	if(w.hasUpdated) {
 		renderTiles();
 		updateHoveredLink(null, null, null, true);
@@ -7028,13 +7256,14 @@ Object.assign(w, {
 			return;
 		}
 		if (relative) {
-			positionX += Math.floor(-x * tileW * coordSizeX);
-			positionY += Math.floor(y * tileH * coordSizeY);
+			var targetX = positionX + Math.floor(-x * tileW * coordSizeX);
+			var targetY = positionY + Math.floor(y * tileH * coordSizeY);
+			scrollAnimateTo(targetX, targetY);
 		} else {
-			positionX = Math.floor(-x * tileW * coordSizeX);
-			positionY = Math.floor(y * tileH * coordSizeY);
+			var targetX = Math.floor(-x * tileW * coordSizeX);
+			var targetY = Math.floor(y * tileH * coordSizeY);
+			scrollAnimateTo(targetX, targetY);
 		}
-		w.render();
 	},
 	doUrlLink: function(url) {
 		linkAuto.active = true;
@@ -8581,6 +8810,7 @@ function begin() {
 	setupDOMEvents();
 	setupClientEvents();
 	setupFlashAnimation();
+	momentum.enable();
 	setWriteInterval();
 	setupPoolCleanupInterval();
 	setupImageChecker();
