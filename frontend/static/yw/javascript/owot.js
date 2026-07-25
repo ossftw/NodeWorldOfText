@@ -369,6 +369,10 @@ var scrollTargetX = 0;
 var scrollTargetY = 0;
 var lastFrameTime = 0;
 
+var wheelScrollTargetX = 0;
+var wheelScrollTargetY = 0;
+var wheelScrolling = false;
+
 var momentum = {
 	enabled: false,
 	startTime: 0,
@@ -464,6 +468,7 @@ function scrollAnimateTo(targetX, targetY) {
 	scrollTargetX = targetX;
 	scrollTargetY = targetY;
 	scrollAnimating = true;
+	wheelScrolling = false;
 }
 
 function scrollAnimateStop() {
@@ -2460,6 +2465,7 @@ function event_mousedown(e, arg_pageX, arg_pageY) {
 
 	scrollAnimateStop();
 	momentum.stop();
+	wheelScrolling = false;
 
 	if(draggingEnabled) {
 		dragStartX = pageX;
@@ -3580,6 +3586,9 @@ var autoArrowKeyMoveState = {
 };
 function autoArrowKeyMoveStart(dir) {
 	if(!autoArrowKeyMoveActive) {
+		scrollAnimateStop();
+		momentum.stop();
+		wheelScrolling = false;
 		autoArrowKeyMoveActive = true;
 		autoArrowKeyMoveInterval = setInterval(function() {
 			if(cursorCoords) {
@@ -3603,14 +3612,12 @@ function autoArrowKeyMoveStart(dir) {
 				if(s_right && !s_left) {
 					var addDiff = diff - autoArrowKeyMoveState.prog_x;
 					autoArrowKeyMoveState.prog_x = diff;
-					positionX -= addDiff;
-					w.render();
+					scrollBy(-addDiff, 0);
 				}
 				if(s_left && !s_right) {
 					var addDiff = diff - autoArrowKeyMoveState.prog_x;
 					autoArrowKeyMoveState.prog_x = diff;
-					positionX += addDiff;
-					w.render();
+					scrollBy(addDiff, 0);
 				}
 			}
 			if(y_t) {
@@ -3618,14 +3625,12 @@ function autoArrowKeyMoveStart(dir) {
 				if(s_up && !s_down) {
 					var addDiff = diff - autoArrowKeyMoveState.prog_y;
 					autoArrowKeyMoveState.prog_y = diff;
-					positionY += addDiff;
-					w.render();
+					scrollBy(0, addDiff);
 				}
 				if(s_down && !s_up) {
 					var addDiff = diff - autoArrowKeyMoveState.prog_y;
 					autoArrowKeyMoveState.prog_y = diff;
-					positionY -= addDiff;
-					w.render();
+					scrollBy(0, -addDiff);
 				}
 			}
 		}, 10);
@@ -4422,6 +4427,7 @@ function event_touchstart(e) {
 
 	scrollAnimateStop();
 	momentum.stop();
+	wheelScrolling = false;
 
 	// if this is the beginning of a potential longpress, mark the start time
 	if(touches.length == 1) {
@@ -4562,7 +4568,15 @@ function event_wheel(e) {
 		deltaX = deltaY;
 		deltaY = 0;
 	}
-	scrollBy(-deltaX, -deltaY);
+	if(!wheelScrolling) {
+		wheelScrollTargetX = positionX;
+		wheelScrollTargetY = positionY;
+	}
+	wheelScrollTargetX -= deltaX;
+	wheelScrollTargetY -= deltaY;
+	wheelScrolling = true;
+	scrollAnimating = false;
+	momentum.stop();
 	w.emit("scroll", {
 		deltaX: -deltaX,
 		deltaY: -deltaY
@@ -5422,6 +5436,16 @@ function renderLoop() {
 	lastFrameTime = now;
 	if(dt > 0 && dt < 1000) {
 		scrollAnimateMove(dt);
+		if(wheelScrolling) {
+			var dx = wheelScrollTargetX - positionX;
+			var dy = wheelScrollTargetY - positionY;
+			if(Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+				wheelScrolling = false;
+			} else {
+				var smooth = 0.2;
+				scrollBy(Math.round(dx * smooth), Math.round(dy * smooth));
+			}
+		}
 	}
 	if(w.hasUpdated) {
 		renderTiles();
