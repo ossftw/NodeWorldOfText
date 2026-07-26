@@ -18,8 +18,9 @@ class Antibot {
 
     constructor() {
         this.clientChecks = (settings.antibot && settings.antibot.client_checks) || [];
+        this.botGlobals = (settings.antibot && settings.antibot.bot_globals) || [];
 
-        if (!this.clientChecks.length) {
+        if (!this.clientChecks.length && !this.botGlobals.length) {
             this.enabled = false;
             return;
         }
@@ -59,9 +60,14 @@ class Antibot {
             return `if(${z[0]} == ${JSON.stringify(z[1])}) parts.push("${this.checkSolves[i]}")`;
         });
 
+        let botGlobalsCode = this.botGlobals.map((g) => {
+            return `if(typeof ${g} !== "undefined") return 0`;
+        });
+
         return obfuscate(
             `
                 let parts = [];
+                ${botGlobalsCode.join(";\n")}
                 ${clientChecksCode.join(";\n")}
                 return ${this.hash}*parts.map(z => z.split("").map(z => z.charCodeAt(0)).reduce((a, b)=>a+b)).reduce((a, b) => a + b);
             `,
