@@ -17,7 +17,13 @@ class Antibot {
     verifiedDevices = false;
 
     constructor() {
-        this.clientChecks = settings.antibot.client_checks;
+        this.clientChecks = (settings.antibot && settings.antibot.client_checks) || [];
+
+        if (!this.clientChecks.length) {
+            this.enabled = false;
+            return;
+        }
+        this.enabled = true;
 
         for (let i = 0; i < 3; i++) {
             this.solves.push(this.clientChecks[Math.floor(Math.random() * this.clientChecks.length)]);
@@ -29,6 +35,8 @@ class Antibot {
     }
 
     verifyMessage(ws, data) {
+        if (!this.enabled) return;
+
         if (data.kind == "devices") {
             this.verifiedDevices = true;
         }
@@ -46,6 +54,7 @@ class Antibot {
     }
 
     generateCode() {
+        if (!this.enabled) return null;
         let clientChecksCode = this.solves.map((z, i) => {
             return `if(${z[0]} == ${JSON.stringify(z[1])}) parts.push("${this.checkSolves[i]}")`;
         });
@@ -70,6 +79,7 @@ class Antibot {
     }
 
     verifyCode(code) {
+        if (!this.enabled) return true;
         let solve = this.hash *
             this.checkSolves.map((z) =>
                 z.split("").map((z) => z.charCodeAt(0)).reduce((a, b) => a + b)

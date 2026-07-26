@@ -63,9 +63,5 @@
 		"display_email": "\"Our World of Text\" <email@site.com>"
 	},
 
-	"activation_key_days_expire": 3,
-
-	"antibot": {
-		"client_checks": []
-	}
+	"activation_key_days_expire": 3
 }

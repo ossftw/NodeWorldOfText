@@ -873,6 +873,9 @@ function setupHTTPServer() {
 async function initializeServer() {
 	console.log("Starting server...");
 
+	var antibotEnabled = settings.antibot && settings.antibot.client_checks && settings.antibot.client_checks.length;
+	console.log("Antibot",  (antibotEnabled ? "enabled" : "disabled"));
+
 	if(accountSystem == "uvias") {
 		setupUvias();
 		await uvias_init();
