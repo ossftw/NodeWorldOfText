@@ -14,8 +14,6 @@ class Antibot {
 
     hash = Math.floor(Math.random() * 999);
 
-    verifiedDevices = false;
-
     constructor() {
         this.clientChecks = (settings.antibot && settings.antibot.client_checks) || [];
         this.botGlobals = (settings.antibot && settings.antibot.bot_globals) || [];
@@ -36,22 +34,37 @@ class Antibot {
     }
 
     verifyMessage(ws, data) {
+        if (!this.enabled) return false;
+        if (!ws.sdata) return false;
+
+        if (ws.sdata.antibot_verified) return false;
+
+        if (ws.sdata.user && (ws.sdata.user.operator || ws.sdata.user.superuser || ws.sdata.user.staff)) {
+            ws.sdata.antibot_verified = true;
+            return false;
+        }
+
+        if (data.kind == "antibot_response") {
+            if (this.verifyCode(data.code)) {
+                ws.sdata.antibot_verified = true;
+                return false;
+            }
+            return true;
+        }
+
+        return true;
+    }
+
+    sendChallenge(ws) {
         if (!this.enabled) return;
-
-        if (data.kind == "devices") {
-            this.verifiedDevices = true;
-        }
-
-        if (data.kind == "hi") {
-            if (ws.sdata && ws.sdata.user) {
-                var user = ws.sdata.user;
-                if (user.operator || user.superuser || user.staff) return false;
-            }
-
-            if (!data.code || !this.verifiedDevices || !this.verifyCode(data.code)) {
-                return true;
-            }
-        }
+        if (!ws.sdata) return;
+        var code = this.generateCode();
+        try {
+            ws.send(JSON.stringify({
+                kind: "antibot_challenge",
+                code: code
+            }));
+        } catch(e) {}
     }
 
     generateCode() {

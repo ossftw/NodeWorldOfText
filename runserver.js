@@ -2248,6 +2248,8 @@ async function manageWebsocketConnection(ws, req) {
 		initial_user_count
 	}));
 
+	global_data.antibot.sendChallenge(ws);
+
 	if(client_cursor_pos[world.id]) {
 		var world_cursors = client_cursor_pos[world.id];
 		for(var csr_channel in world_cursors) {
