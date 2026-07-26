@@ -1,8 +1,14 @@
 var { obfuscate } = require("javascript-obfuscator");
+var fs = require("fs");
+var path = require("path");
+
+var settingsPath = path.resolve(process.cwd(), "nwotdata/settings.json");
+if (!fs.existsSync(settingsPath)) { // Do I even need this?
+    settingsPath = path.resolve(process.cwd(), "settings_example.json");
+}
+var settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
 
 class Antibot {
-    clientChecks = []; //tbd
-
     checkSolves = [];
     solves = [];
 
@@ -11,6 +17,8 @@ class Antibot {
     verifiedDevices = false;
 
     constructor() {
+        this.clientChecks = settings.antibot.client_checks;
+
         for (let i = 0; i < 3; i++) {
             this.solves.push(this.clientChecks[Math.floor(Math.random() * this.clientChecks.length)]);
         }
