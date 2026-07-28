@@ -2,7 +2,7 @@ var { obfuscate } = require("javascript-obfuscator");
 var fs = require("fs");
 var path = require("path");
 
-var settingsPath = path.resolve(process.cwd(), "nwotdata/settings.json");
+var settingsPath = path.resolve(process.cwd(), "../nwotdata/settings.json");
 if (!fs.existsSync(settingsPath)) { // Do I even need this?
     settingsPath = path.resolve(process.cwd(), "settings_example.json");
 }
